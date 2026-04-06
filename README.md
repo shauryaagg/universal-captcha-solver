@@ -173,6 +173,25 @@ With coverage:
 pytest --cov=captcha_solver --cov-report=term-missing
 ```
 
+### Integration Tests
+
+Integration tests run against live 2captcha.com demo pages using Playwright and the cloud vision backend. They require:
+
+- An API key: `export ANTHROPIC_API_KEY=your-key` or `export OPENAI_API_KEY=your-key`
+- Playwright: `pip install playwright && playwright install chromium`
+
+Run integration tests:
+
+```bash
+pytest tests/integration/ -v -s
+```
+
+Skip integration tests when running the full suite:
+
+```bash
+pytest -m "not integration"
+```
+
 ### Linting
 
 ```bash
