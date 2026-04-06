@@ -1,0 +1,1 @@
+"""Core captcha solving logic."""
