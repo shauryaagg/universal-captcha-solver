@@ -14,9 +14,11 @@ class TestSettings:
         assert settings.server_host == "127.0.0.1"
         assert settings.server_port == 8000
         assert settings.log_level == "INFO"
-        assert settings.cloud_provider == "openai"
+        assert settings.cloud_provider == "anthropic"
         assert settings.openai_api_key is None
         assert settings.anthropic_api_key is None
+        assert settings.openai_model == "gpt-4o"
+        assert settings.anthropic_model == "claude-sonnet-4-20250514"
 
     def test_instantiation(self):
         s = Settings()

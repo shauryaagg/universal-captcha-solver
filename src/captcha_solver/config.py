@@ -18,7 +18,9 @@ class Settings(BaseSettings):
 
     openai_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
-    cloud_provider: Literal["openai", "anthropic"] = "openai"
+    cloud_provider: Literal["openai", "anthropic"] = "anthropic"
+    openai_model: str = "gpt-4o"
+    anthropic_model: str = "claude-sonnet-4-20250514"
 
     min_confidence: float = 0.7
     max_retries: int = 2

@@ -102,7 +102,25 @@ class MathSolver(BaseSolver):
     def _get_backend(self) -> ModelBackend:
         if self._backend is not None:
             return self._backend
-        from captcha_solver.models.onnx_backend import OnnxBackend
+        from captcha_solver.config import Settings
 
-        self._backend = OnnxBackend()
+        settings = Settings()
+        if settings.model_backend == "cloud":
+            from captcha_solver.models.cloud_backend import CloudBackend
+
+            self._backend = CloudBackend(
+                provider=settings.cloud_provider,
+                api_key=(
+                    settings.anthropic_api_key
+                    if settings.cloud_provider == "anthropic"
+                    else settings.openai_api_key
+                ),
+            )
+        else:
+            from captcha_solver.models.onnx_backend import OnnxBackend
+
+            self._backend = OnnxBackend(
+                model_dir=settings.model_dir,
+                gpu_enabled=settings.gpu_enabled,
+            )
         return self._backend
