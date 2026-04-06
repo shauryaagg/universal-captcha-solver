@@ -1,1 +1,1 @@
-"""HTTP server for captcha solving as a service."""
+"""REST API server for captcha-solver."""
