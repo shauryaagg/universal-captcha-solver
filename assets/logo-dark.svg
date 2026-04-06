@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 200" fill="none">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Icon: Shield with checkmark -->
+  <g transform="translate(24, 20)">
+    <path d="M60 8L16 28v36c0 33.6 18.8 65 44 80.4C85.2 129 104 97.6 104 64V28L60 8z" fill="url(#grad1)" opacity="0.9"/>
+    <path d="M60 16L24 32v32c0 28.8 15.4 55.6 36 68.8 20.6-13.2 36-40 36-68.8V32L60 16z" fill="#ffffff" fill-opacity="0.05"/>
+    <path d="M44 64l12 12 24-24" stroke="url(#grad2)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="84" cy="56" r="8" fill="#1a1a2e"/>
+    <circle cx="84" cy="56" r="5" fill="url(#grad2)" opacity="0.6"/>
+  </g>
+
+  <!-- Text -->
+  <text x="148" y="108" font-family="'SF Pro Display', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif" font-size="64" font-weight="700" fill="#1e293b" letter-spacing="-1">captcha</text>
+  <text x="460" y="108" font-family="'SF Pro Display', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif" font-size="64" font-weight="300" fill="#7c3aed" letter-spacing="-1">solver</text>
+  <text x="150" y="148" font-family="'SF Pro Display', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif" font-size="18" fill="#94a3b8" letter-spacing="0.5">Universal captcha solving engine for AI agents</text>
+</svg>
