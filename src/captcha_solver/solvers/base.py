@@ -52,5 +52,5 @@ class BaseSolver(ABC):
     async def asolve(self, solver_input: SolverInput) -> CaptchaResult:
         import asyncio
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self.solve, solver_input)

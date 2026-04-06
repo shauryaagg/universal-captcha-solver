@@ -31,6 +31,7 @@ class SolverPipeline:
         registry = SolverRegistry()
         for solver in get_default_solvers():
             registry.register(solver)
+        registry.discover_plugins()
         return registry
 
     def solve(
@@ -87,11 +88,13 @@ class SolverPipeline:
         captcha_type: CaptchaType | str | None = None,
         **kwargs: Any,
     ) -> CaptchaResult:
-        """Async version of solve."""
+        """Async version of solve. Uses async cloud API calls when available."""
         solver_input = self._build_input(image, **kwargs)
         resolved_type = self._resolve_type(captcha_type, solver_input)
         solver = self.registry.get_solver(resolved_type)
         solver_input = solver.preprocess(solver_input)
+
+        # Try async solve first, fall back to sync-in-executor
         return await solver.asolve(solver_input)
 
     def detect(self, image: bytes | str | Path) -> tuple[CaptchaType, float]:

@@ -28,4 +28,24 @@ class SolverRegistry:
         return list(self._solvers.keys())
 
     def discover_plugins(self) -> None:
-        pass
+        """Load solver plugins registered via entry_points."""
+        import importlib.metadata
+
+        try:
+            eps = importlib.metadata.entry_points(group="captcha_solver.solvers")
+        except TypeError:
+            # Python 3.9/3.10 compat
+            eps = importlib.metadata.entry_points().get("captcha_solver.solvers", [])
+
+        for ep in eps:
+            try:
+                solver_class = ep.load()
+                solver = solver_class()
+                if isinstance(solver, BaseSolver):
+                    self.register(solver)
+            except Exception:
+                import logging
+
+                logging.getLogger(__name__).warning(
+                    f"Failed to load solver plugin: {ep.name}"
+                )

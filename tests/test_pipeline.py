@@ -98,3 +98,30 @@ class TestSolverPipeline:
         pipeline = _build_pipeline_with_stubs()
         with pytest.raises(TypeError, match="Unsupported image type"):
             pipeline.solve(image=12345)
+
+    @pytest.mark.asyncio
+    async def test_asolve_returns_result(self, sample_text_image: bytes):
+        """asolve() should return a CaptchaResult using async path."""
+        pipeline = _build_pipeline_with_stubs()
+        result = await pipeline.asolve(image=sample_text_image, captcha_type="text")
+        assert isinstance(result, CaptchaResult)
+        assert result.solution == "stubbed"
+        assert result.captcha_type == "text"
+
+    @pytest.mark.asyncio
+    async def test_asolve_with_file_path(self, tmp_image_file):
+        """asolve() works with file paths too."""
+        pipeline = _build_pipeline_with_stubs()
+        result = await pipeline.asolve(image=tmp_image_file)
+        assert isinstance(result, CaptchaResult)
+        assert result.solution == "stubbed"
+
+    @pytest.mark.asyncio
+    async def test_asolve_with_explicit_enum_type(self, sample_text_image: bytes):
+        """asolve() works with CaptchaType enum."""
+        pipeline = _build_pipeline_with_stubs()
+        result = await pipeline.asolve(
+            image=sample_text_image, captcha_type=CaptchaType.MATH
+        )
+        assert isinstance(result, CaptchaResult)
+        assert result.captcha_type == "math"
