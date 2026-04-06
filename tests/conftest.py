@@ -2,6 +2,7 @@
 
 import io
 
+import numpy as np
 import pytest
 from PIL import Image, ImageDraw
 
@@ -42,8 +43,21 @@ def sample_slider_image() -> bytes:
 
 @pytest.fixture
 def sample_square_image() -> bytes:
-    """Generate a square image (simulates grid captcha)."""
-    img = Image.new("RGB", (300, 300), color=(180, 180, 180))
+    """Generate a square image with many colours (simulates grid/photo captcha)."""
+    rng = np.random.default_rng(42)
+    arr = rng.integers(0, 256, size=(300, 300, 3), dtype=np.uint8)
+    img = Image.fromarray(arr, "RGB")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+@pytest.fixture
+def sample_geetest_image() -> bytes:
+    """Generate a GeeTest-like image: wide, colourful, high edge density."""
+    rng = np.random.default_rng(99)
+    arr = rng.integers(0, 256, size=(200, 300, 3), dtype=np.uint8)
+    img = Image.fromarray(arr, "RGB")
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()

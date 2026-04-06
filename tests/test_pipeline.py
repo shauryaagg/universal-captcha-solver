@@ -36,6 +36,62 @@ class _StubSolver(BaseSolver):
         )
 
 
+class _LowConfidenceSolver(BaseSolver):
+    """Solver that returns results below confidence threshold."""
+
+    def __init__(
+        self,
+        ctype: CaptchaType = CaptchaType.TEXT,
+        confidence: float = 0.3,
+        solver_name: str = "LowConfidence",
+    ):
+        self._ctype = ctype
+        self._confidence = confidence
+        self._name = solver_name
+
+    @property
+    def captcha_type(self) -> CaptchaType:
+        return self._ctype
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def can_solve(self, solver_input: SolverInput) -> bool:
+        return True
+
+    def solve(self, solver_input: SolverInput) -> CaptchaResult:
+        return CaptchaResult(
+            solution="low-confidence-answer",
+            captcha_type=self._ctype.value,
+            confidence=self._confidence,
+            solver_name=self.name,
+            elapsed_ms=2.0,
+        )
+
+
+class _FailingSolver(BaseSolver):
+    """Solver that always raises an exception."""
+
+    def __init__(self, ctype: CaptchaType = CaptchaType.TEXT, solver_name: str = "Failing"):
+        self._ctype = ctype
+        self._name = solver_name
+
+    @property
+    def captcha_type(self) -> CaptchaType:
+        return self._ctype
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def can_solve(self, solver_input: SolverInput) -> bool:
+        return True
+
+    def solve(self, solver_input: SolverInput) -> CaptchaResult:
+        raise RuntimeError("Simulated solver failure")
+
+
 def _build_pipeline_with_stubs() -> SolverPipeline:
     registry = SolverRegistry()
     registry.register(_StubSolver(CaptchaType.TEXT))
@@ -125,3 +181,72 @@ class TestSolverPipeline:
         )
         assert isinstance(result, CaptchaResult)
         assert result.captcha_type == "math"
+
+    # --- New tests for retry/fallback chains ---
+
+    def test_fallback_to_second_solver(self, sample_text_image: bytes):
+        """When the first solver is below threshold, fall back to next registered solver."""
+        registry = SolverRegistry()
+        # Low-confidence solver registered first (higher priority)
+        registry.register(_LowConfidenceSolver(CaptchaType.TEXT, confidence=0.3), priority=10)
+        # Good solver registered second (lower priority)
+        registry.register(_StubSolver(CaptchaType.TEXT), priority=0)
+        pipeline = SolverPipeline(settings=Settings(), registry=registry)
+        result = pipeline.solve(image=sample_text_image, captcha_type="text")
+        # Should get the stub solver's high-confidence result
+        assert result.confidence == 0.99
+        assert result.solution == "stubbed"
+
+    def test_best_result_returned_when_all_below_threshold(self, sample_text_image: bytes):
+        """When all solvers are below threshold, return the best result."""
+        registry = SolverRegistry()
+        registry.register(
+            _LowConfidenceSolver(CaptchaType.TEXT, confidence=0.3, solver_name="Low1"),
+            priority=10,
+        )
+        registry.register(
+            _LowConfidenceSolver(CaptchaType.TEXT, confidence=0.5, solver_name="Low2"),
+            priority=0,
+        )
+        pipeline = SolverPipeline(settings=Settings(min_confidence=0.9), registry=registry)
+        result = pipeline.solve(image=sample_text_image, captcha_type="text")
+        # Should return the higher confidence result
+        assert result.confidence == 0.5
+        assert result.solver_name == "Low2"
+
+    def test_exception_in_solver_does_not_crash(self, sample_text_image: bytes):
+        """A solver that raises should not crash the pipeline; fallback should work."""
+        registry = SolverRegistry()
+        registry.register(_FailingSolver(CaptchaType.TEXT, solver_name="Crasher"), priority=10)
+        registry.register(_StubSolver(CaptchaType.TEXT), priority=0)
+        pipeline = SolverPipeline(settings=Settings(), registry=registry)
+        result = pipeline.solve(image=sample_text_image, captcha_type="text")
+        assert result.confidence == 0.99
+        assert result.solution == "stubbed"
+
+    def test_all_solvers_fail_raises_runtime_error(self, sample_text_image: bytes):
+        """If every solver raises, pipeline should raise RuntimeError."""
+        registry = SolverRegistry()
+        registry.register(_FailingSolver(CaptchaType.TEXT, solver_name="Crasher1"))
+        pipeline = SolverPipeline(settings=Settings(), registry=registry)
+        with pytest.raises(RuntimeError, match="All solvers failed"):
+            pipeline.solve(image=sample_text_image, captcha_type="text")
+
+    def test_fallback_to_cloud_config(self):
+        """The fallback_to_cloud setting should exist and default to True."""
+        settings = Settings()
+        assert settings.fallback_to_cloud is True
+
+    def test_fallback_to_cloud_disabled(self):
+        """fallback_to_cloud can be explicitly disabled."""
+        settings = Settings(fallback_to_cloud=False)
+        assert settings.fallback_to_cloud is False
+
+    def test_no_solver_for_type_raises(self, sample_text_image: bytes):
+        """Requesting a type with no registered solver should raise ValueError."""
+        registry = SolverRegistry()
+        # Only register MATH, then request TEXT
+        registry.register(_StubSolver(CaptchaType.MATH))
+        pipeline = SolverPipeline(settings=Settings(), registry=registry)
+        with pytest.raises(ValueError, match="No solver registered"):
+            pipeline.solve(image=sample_text_image, captcha_type="text")

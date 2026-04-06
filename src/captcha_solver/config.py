@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     min_confidence: float = 0.7
     max_retries: int = 2
     timeout_seconds: float = 30.0
+    fallback_to_cloud: bool = True
 
     server_host: str = "127.0.0.1"
     server_port: int = 8000

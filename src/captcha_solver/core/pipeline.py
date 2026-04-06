@@ -42,6 +42,11 @@ class SolverPipeline:
     ) -> CaptchaResult:
         """Solve a captcha.
 
+        Tries all registered solvers for the detected type, each with
+        up to ``max_retries`` retry attempts.  Returns immediately when
+        a result meets ``min_confidence``, otherwise returns the best
+        result seen across every solver and attempt.
+
         Args:
             image: Image bytes, file path, or Path object
             captcha_type: Optional type hint (skip auto-detection)
@@ -53,34 +58,50 @@ class SolverPipeline:
         # Resolve captcha type
         resolved_type = self._resolve_type(captcha_type, solver_input)
 
-        # Get solver
-        solver = self.registry.get_solver(resolved_type)
-        logger.debug("Using solver: %s for type: %s", solver.name, resolved_type)
+        all_solvers = self.registry.get_all_solvers(resolved_type)
+        if not all_solvers:
+            raise ValueError(f"No solver registered for {resolved_type}")
 
-        # Preprocess
-        solver_input = solver.preprocess(solver_input)
-
-        # Solve with retry
         best_result: CaptchaResult | None = None
-        attempts = self.settings.max_retries + 1
 
-        for attempt in range(attempts):
-            result = solver.solve(solver_input)
-            logger.debug("Attempt %d: confidence=%.2f", attempt + 1, result.confidence)
+        for solver in all_solvers:
+            for attempt in range(self.settings.max_retries + 1):
+                try:
+                    preprocessed = solver.preprocess(solver_input)
+                    result = solver.solve(preprocessed)
 
-            if best_result is None or result.confidence > best_result.confidence:
-                best_result = result
+                    logger.debug(
+                        "Solver %s attempt %d: confidence=%.2f",
+                        solver.name,
+                        attempt + 1,
+                        result.confidence,
+                    )
 
-            if result.confidence >= self.settings.min_confidence:
-                return result
+                    if best_result is None or result.confidence > best_result.confidence:
+                        best_result = result
 
-            # Try next solver in list if available
-            all_solvers = self.registry.get_all_solvers(resolved_type)
-            if attempt + 1 < len(all_solvers):
-                solver = all_solvers[attempt + 1]
-                solver_input = solver.preprocess(solver_input)
+                    if result.confidence >= self.settings.min_confidence:
+                        return result
 
-        return best_result  # type: ignore[return-value]
+                except Exception as e:
+                    logger.warning(
+                        "Solver %s attempt %d failed: %s",
+                        solver.name,
+                        attempt + 1,
+                        e,
+                    )
+                    continue
+
+            # This solver exhausted its retries, try next
+            logger.debug(
+                "Solver %s didn't meet confidence threshold, trying next",
+                solver.name,
+            )
+
+        if best_result is not None:
+            return best_result
+
+        raise RuntimeError(f"All solvers failed for type {resolved_type}")
 
     async def asolve(
         self,
