@@ -1,5 +1,7 @@
 """Captcha solver implementations."""
+from captcha_solver.solvers.audio import AudioSolver
 from captcha_solver.solvers.base import BaseSolver, CaptchaType, SolverInput
+from captcha_solver.solvers.geetest import GeeTestSolver
 from captcha_solver.solvers.hcaptcha import HCaptchaSolver
 from captcha_solver.solvers.math_solver import MathSolver
 from captcha_solver.solvers.recaptcha_v2 import RecaptchaV2Solver
@@ -9,8 +11,10 @@ from captcha_solver.solvers.text import TextSolver
 from captcha_solver.solvers.turnstile import TurnstileSolver
 
 __all__ = [
+    "AudioSolver",
     "BaseSolver",
     "CaptchaType",
+    "GeeTestSolver",
     "HCaptchaSolver",
     "MathSolver",
     "RecaptchaV2Solver",
@@ -28,6 +32,8 @@ def get_default_solvers() -> list[BaseSolver]:
         TextSolver(),
         MathSolver(),
         SliderSolver(),
+        AudioSolver(),
+        GeeTestSolver(),
         RecaptchaV2Solver(),
         RecaptchaV3Solver(),
         HCaptchaSolver(),
